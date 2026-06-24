@@ -16,4 +16,6 @@ export * from './levelInput';
 export * from './levelInputDifficulty';
 export * from './levelUpdate';
 export * from './levelUpdateDifficulty';
+export * from './session';
+export * from './sessionInput';
 export * from './stats';

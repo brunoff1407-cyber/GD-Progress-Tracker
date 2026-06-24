@@ -151,6 +151,89 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /levels/{levelId}/sessions:
+    get:
+      operationId: getLevelSessions
+      tags: [levels]
+      summary: List all sessions for a level
+      parameters:
+        - name: levelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createSession
+      tags: [levels]
+      summary: Log a new practice session for a level
+      parameters:
+        - name: levelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionInput"
+      responses:
+        "201":
+          description: Session logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Level not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sessions/{id}:
+    delete:
+      operationId: deleteSession
+      tags: [levels]
+      summary: Delete a session
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /stats:
     get:
       operationId: getStats
@@ -308,6 +391,55 @@ components:
           type: integer
         completed:
           type: integer
+
+    Session:
+      type: object
+      required:
+        - id
+        - levelId
+        - attempts
+        - bestPercent
+        - sessionDate
+        - createdAt
+      properties:
+        id:
+          type: integer
+        levelId:
+          type: integer
+        attempts:
+          type: integer
+          minimum: 0
+        bestPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        notes:
+          type: ["string", "null"]
+        sessionDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    SessionInput:
+      type: object
+      required:
+        - attempts
+        - bestPercent
+      properties:
+        attempts:
+          type: integer
+          minimum: 0
+        bestPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        notes:
+          type: string
+        sessionDate:
+          type: string
+          format: date-time
 
     ErrorResponse:
       type: object

@@ -160,6 +160,62 @@ export const DeleteLevelParams = zod.object({
 
 
 /**
+ * @summary List all sessions for a level
+ */
+export const GetLevelSessionsParams = zod.object({
+  "levelId": zod.coerce.number()
+})
+
+export const getLevelSessionsResponseAttemptsMin = 0;
+
+export const getLevelSessionsResponseBestPercentMin = 0;
+export const getLevelSessionsResponseBestPercentMax = 100;
+
+
+
+export const GetLevelSessionsResponseItem = zod.object({
+  "id": zod.number(),
+  "levelId": zod.number(),
+  "attempts": zod.number().min(getLevelSessionsResponseAttemptsMin),
+  "bestPercent": zod.number().min(getLevelSessionsResponseBestPercentMin).max(getLevelSessionsResponseBestPercentMax),
+  "notes": zod.string().nullish(),
+  "sessionDate": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
+export const GetLevelSessionsResponse = zod.array(GetLevelSessionsResponseItem)
+
+
+/**
+ * @summary Log a new practice session for a level
+ */
+export const CreateSessionParams = zod.object({
+  "levelId": zod.coerce.number()
+})
+
+export const createSessionBodyAttemptsMin = 0;
+
+export const createSessionBodyBestPercentMin = 0;
+export const createSessionBodyBestPercentMax = 100;
+
+
+
+export const CreateSessionBody = zod.object({
+  "attempts": zod.number().min(createSessionBodyAttemptsMin),
+  "bestPercent": zod.number().min(createSessionBodyBestPercentMin).max(createSessionBodyBestPercentMax),
+  "notes": zod.string().optional(),
+  "sessionDate": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Delete a session
+ */
+export const DeleteSessionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get overall progress statistics
  */
 export const GetStatsResponse = zod.object({

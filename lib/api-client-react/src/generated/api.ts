@@ -26,6 +26,8 @@ import type {
   Level,
   LevelInput,
   LevelUpdate,
+  Session,
+  SessionInput,
   Stats
 } from './api.schemas';
 
@@ -491,6 +493,225 @@ export const useDeleteLevel = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteLevelMutationOptions(options));
+    }
+
+export const getGetLevelSessionsUrl = (levelId: number,) => {
+
+
+
+
+  return `/api/levels/${levelId}/sessions`
+}
+
+/**
+ * @summary List all sessions for a level
+ */
+export const getLevelSessions = async (levelId: number, options?: RequestInit): Promise<Session[]> => {
+
+  return customFetch<Session[]>(getGetLevelSessionsUrl(levelId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLevelSessionsQueryKey = (levelId: number,) => {
+    return [
+    `/api/levels/${levelId}/sessions`
+    ] as const;
+    }
+
+
+export const getGetLevelSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getLevelSessions>>, TError = ErrorType<ErrorResponse>>(levelId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLevelSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLevelSessionsQueryKey(levelId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLevelSessions>>> = ({ signal }) => getLevelSessions(levelId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(levelId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLevelSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLevelSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getLevelSessions>>>
+export type GetLevelSessionsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List all sessions for a level
+ */
+
+export function useGetLevelSessions<TData = Awaited<ReturnType<typeof getLevelSessions>>, TError = ErrorType<ErrorResponse>>(
+ levelId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLevelSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLevelSessionsQueryOptions(levelId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSessionUrl = (levelId: number,) => {
+
+
+
+
+  return `/api/levels/${levelId}/sessions`
+}
+
+/**
+ * @summary Log a new practice session for a level
+ */
+export const createSession = async (levelId: number,
+    sessionInput: SessionInput, options?: RequestInit): Promise<Session> => {
+
+  return customFetch<Session>(getCreateSessionUrl(levelId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sessionInput,)
+  }
+);}
+
+
+
+
+export const getCreateSessionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSession>>, TError,{levelId: number;data: BodyType<SessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSession>>, TError,{levelId: number;data: BodyType<SessionInput>}, TContext> => {
+
+const mutationKey = ['createSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSession>>, {levelId: number;data: BodyType<SessionInput>}> = (props) => {
+          const {levelId,data} = props ?? {};
+
+          return  createSession(levelId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createSession>>>
+    export type CreateSessionMutationBody = BodyType<SessionInput>
+    export type CreateSessionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Log a new practice session for a level
+ */
+export const useCreateSession = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSession>>, TError,{levelId: number;data: BodyType<SessionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSession>>,
+        TError,
+        {levelId: number;data: BodyType<SessionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSessionMutationOptions(options));
+    }
+
+export const getDeleteSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/sessions/${id}`
+}
+
+/**
+ * @summary Delete a session
+ */
+export const deleteSession = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteSessionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteSessionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSession>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSession>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSession(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSessionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSession>>>
+
+    export type DeleteSessionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a session
+ */
+export const useDeleteSession = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSession>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSessionMutationOptions(options));
     }
 
 export const getGetStatsUrl = () => {

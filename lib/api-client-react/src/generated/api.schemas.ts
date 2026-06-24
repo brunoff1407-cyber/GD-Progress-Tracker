@@ -138,6 +138,34 @@ export interface Stats {
   byDifficulty: DifficultyBreakdown[];
 }
 
+export interface Session {
+  id: number;
+  levelId: number;
+  /** @minimum 0 */
+  attempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  bestPercent: number;
+  /** @nullable */
+  notes?: string | null;
+  sessionDate: string;
+  createdAt: string;
+}
+
+export interface SessionInput {
+  /** @minimum 0 */
+  attempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  bestPercent: number;
+  notes?: string;
+  sessionDate?: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }

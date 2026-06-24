@@ -1,5 +1,16 @@
 import { useParams, useLocation } from "wouter";
-import { useGetLevel, useUpdateLevel, useDeleteLevel, getGetLevelQueryKey, getGetLevelsQueryKey, getGetStatsQueryKey } from "@workspace/api-client-react";
+import { 
+  useGetLevel, 
+  useUpdateLevel, 
+  useDeleteLevel, 
+  getGetLevelQueryKey, 
+  getGetLevelsQueryKey, 
+  getGetStatsQueryKey,
+  useGetLevelSessions,
+  useCreateSession,
+  useDeleteSession,
+  getGetLevelSessionsQueryKey
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
@@ -8,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, ArrowLeft, Star, Save } from "lucide-react";
+import { Trash2, ArrowLeft, Star, Save, Plus, Calendar, Hash, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -25,11 +36,23 @@ export default function LevelDetail() {
   const updateLevel = useUpdateLevel();
   const deleteLevel = useDeleteLevel();
 
+  // Sessions
+  const { data: sessions, isLoading: sessionsLoading } = useGetLevelSessions(levelId, { query: { enabled: !!levelId, queryKey: getGetLevelSessionsQueryKey(levelId) } });
+  const createSession = useCreateSession();
+  const deleteSession = useDeleteSession();
+
   const [editMode, setEditMode] = useState(false);
   const [percent, setPercent] = useState<string>("0");
   const [attempts, setAttempts] = useState<string>("0");
   const [notes, setNotes] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Session form state
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [sessionAttempts, setSessionAttempts] = useState<string>("");
+  const [sessionPercent, setSessionPercent] = useState<string>("");
+  const [sessionNotes, setSessionNotes] = useState("");
+  const [sessionDate, setSessionDate] = useState(todayStr);
 
   useEffect(() => {
     if (level && !editMode) {
@@ -64,13 +87,12 @@ export default function LevelDetail() {
 
   const handleSave = () => {
     const updatedData = {
-      bestPercent: parseInt(percent, 10),
-      attempts: parseInt(attempts, 10),
+      bestPercent: parseInt(percent, 10) || 0,
+      attempts: parseInt(attempts, 10) || 0,
       notes,
       isCompleted: isCompleted || parseInt(percent, 10) === 100,
     };
     
-    // Automatically set isCompleted if percent is 100
     if (updatedData.bestPercent === 100) {
       updatedData.isCompleted = true;
       setIsCompleted(true);
@@ -108,9 +130,78 @@ export default function LevelDetail() {
     );
   };
 
+  const handleLogSession = () => {
+    const parsedAttempts = parseInt(sessionAttempts, 10) || 0;
+    const parsedPercent = parseInt(sessionPercent, 10) || 0;
+    
+    createSession.mutate(
+      {
+        levelId,
+        data: {
+          attempts: parsedAttempts,
+          bestPercent: parsedPercent,
+          notes: sessionNotes || undefined,
+          sessionDate: sessionDate ? new Date(sessionDate).toISOString() : undefined,
+        }
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetLevelSessionsQueryKey(levelId) });
+          toast({ title: "Session logged!" });
+          
+          setSessionAttempts("");
+          setSessionPercent("");
+          setSessionNotes("");
+          
+          const isNewBest = parsedPercent > level.bestPercent;
+          const newBestPercent = isNewBest ? parsedPercent : level.bestPercent;
+          const isNowCompleted = level.isCompleted || newBestPercent === 100;
+          const newTotalAttempts = level.attempts + parsedAttempts;
+
+          updateLevel.mutate(
+            {
+              id: levelId,
+              data: {
+                bestPercent: newBestPercent,
+                isCompleted: isNowCompleted,
+                attempts: newTotalAttempts,
+              }
+            },
+            {
+              onSuccess: (data) => {
+                queryClient.setQueryData(getGetLevelQueryKey(levelId), data);
+                queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+                queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
+                if (isNewBest) {
+                  toast({ title: "New best percent!", description: `Updated to ${parsedPercent}%` });
+                }
+              }
+            }
+          );
+        },
+        onError: () => {
+          toast({ variant: "destructive", title: "Failed to log session" });
+        }
+      }
+    );
+  };
+
+  const handleDeleteSession = (sessionId: number) => {
+    if (!window.confirm("Delete this session?")) return;
+    deleteSession.mutate(
+      { id: sessionId },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetLevelSessionsQueryKey(levelId) });
+          toast({ title: "Session removed" });
+        }
+      }
+    );
+  };
+
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto pb-20">
         <Button variant="ghost" className="mb-6 text-muted-foreground hover:text-foreground p-0 px-2" onClick={() => setLocation("/")}>
           <ArrowLeft className="mr-2" size={16} /> Back to Dashboard
         </Button>
@@ -166,7 +257,7 @@ export default function LevelDetail() {
         </div>
 
         {editMode ? (
-          <div className="bg-card border border-card-border p-6 rounded-lg shadow-lg">
+          <div className="bg-card border border-card-border p-6 rounded-lg shadow-lg mb-8">
             <h3 className="text-xl font-display mb-4 text-primary uppercase">Log Progress</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
@@ -228,12 +319,151 @@ export default function LevelDetail() {
           </div>
         ) : (
           level.notes && (
-            <div className="bg-card border border-card-border p-6 rounded-lg">
+            <div className="bg-card border border-card-border p-6 rounded-lg mb-8">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Notes</h3>
               <p className="whitespace-pre-wrap text-foreground/90 font-light leading-relaxed">{level.notes}</p>
             </div>
           )
         )}
+
+        <div className="mt-12 space-y-8">
+          <div>
+            <h2 className="text-2xl font-display uppercase tracking-wider mb-6 flex items-center gap-2 text-foreground">
+              Practice Sessions
+            </h2>
+            
+            <div className="bg-card border border-card-border p-6 rounded-lg shadow-lg">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Log New Session</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Calendar size={12}/> Date</label>
+                  <Input 
+                    type="date" 
+                    value={sessionDate} 
+                    onChange={e => setSessionDate(e.target.value)} 
+                    className="bg-background"
+                    data-testid="input-session-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Hash size={12}/> Attempts</label>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    placeholder="0"
+                    value={sessionAttempts} 
+                    onChange={e => setSessionAttempts(e.target.value)} 
+                    className="bg-background"
+                    data-testid="input-session-attempts"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Target size={12}/> Best %</label>
+                  <div className="relative">
+                    <Input 
+                      type="number" 
+                      min="0" max="100"
+                      placeholder="0"
+                      value={sessionPercent} 
+                      onChange={e => setSessionPercent(e.target.value)} 
+                      className="bg-background pr-8"
+                      data-testid="input-session-percent"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <label className="text-xs uppercase tracking-widest text-muted-foreground">Notes</label>
+                <Textarea 
+                  value={sessionNotes} 
+                  onChange={e => setSessionNotes(e.target.value)} 
+                  placeholder="How did this session go?"
+                  className="bg-background min-h-[80px]"
+                  data-testid="input-session-notes"
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleLogSession} 
+                  className="font-display uppercase tracking-wider"
+                  disabled={createSession.isPending || !sessionAttempts || !sessionPercent}
+                  data-testid="button-log-session"
+                >
+                  {createSession.isPending ? "Logging..." : <><Plus size={16} className="mr-2" /> Log Session</>}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Session History</h3>
+            
+            {sessionsLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            ) : sessions && sessions.length > 0 ? (
+              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+                {[...sessions].sort((a, b) => new Date(b.sessionDate || b.createdAt).getTime() - new Date(a.sessionDate || a.createdAt).getTime()).map((session, i) => (
+                  <div key={session.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active" data-testid={`card-session-${session.id}`}>
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-card border-card-border shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow shadow-primary/20 z-10">
+                      <div className="w-2 h-2 bg-primary rounded-full glow-primary"></div>
+                    </div>
+                    
+                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-lg border border-border bg-card shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="text-primary font-display text-sm" data-testid={`text-session-date-${session.id}`}>
+                          {new Date(session.sessionDate || session.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mt-1 -mr-1"
+                          onClick={() => handleDeleteSession(session.id)}
+                          data-testid={`button-delete-session-${session.id}`}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex-1">
+                          <div className="text-xs uppercase text-muted-foreground mb-1">Best Percent</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-display text-xl" data-testid={`text-session-percent-${session.id}`}>{session.bestPercent}%</span>
+                            <div className="flex-1 max-w-[100px]">
+                              <ProgressBar value={session.bestPercent} isCompleted={session.bestPercent === 100} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-px h-8 bg-border"></div>
+                        <div>
+                          <div className="text-xs uppercase text-muted-foreground mb-1">Attempts</div>
+                          <div className="font-display text-xl" data-testid={`text-session-attempts-${session.id}`}>{session.attempts}</div>
+                        </div>
+                      </div>
+                      
+                      {session.notes && (
+                        <div className="text-sm text-foreground/80 bg-background/50 p-2 rounded border border-border/50" data-testid={`text-session-notes-${session.id}`}>
+                          {session.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-card/50 border border-dashed border-border rounded-lg" data-testid="text-no-sessions">
+                <Target className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-muted-foreground font-display uppercase tracking-widest text-sm">No sessions logged yet.</p>
+                <p className="text-muted-foreground/70 text-xs mt-1">Start grinding!</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
