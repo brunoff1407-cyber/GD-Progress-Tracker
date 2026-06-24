@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { StatsGrid } from "@/components/StatsGrid";
 import { LevelCard } from "@/components/LevelCard";
 import { SkillCard } from "@/components/SkillCard";
+import { DifficultyChart } from "@/components/DifficultyChart";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -23,6 +24,10 @@ export default function Dashboard() {
 
         {stats && levels && (
           <SkillCard stats={stats} levels={levels} />
+        )}
+
+        {stats && stats.byDifficulty.length > 0 && (
+          <DifficultyChart stats={stats} />
         )}
       </div>
 
