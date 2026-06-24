@@ -23,6 +23,7 @@ import { Trash2, ArrowLeft, Star, Save, Plus, Calendar, Hash, Target } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
+import { ProgressChart } from "@/components/ProgressChart";
 
 export default function LevelDetail() {
   const { id } = useParams<{ id: string }>();
@@ -395,6 +396,10 @@ export default function LevelDetail() {
               </div>
             </div>
           </div>
+
+          {sessions && sessions.length >= 2 && (
+            <ProgressChart sessions={sessions} />
+          )}
 
           <div>
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Session History</h3>
