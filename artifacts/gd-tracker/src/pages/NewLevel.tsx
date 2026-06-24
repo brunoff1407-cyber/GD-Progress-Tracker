@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -70,6 +71,9 @@ export default function NewLevel() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
+        <Button variant="ghost" className="mb-6 text-muted-foreground hover:text-foreground p-0 px-2" onClick={() => setLocation("/")}>
+          <ArrowLeft className="mr-2" size={16} /> Back to Dashboard
+        </Button>
         <h1 className="text-3xl font-display text-primary mb-8 uppercase">Add Level</h1>
         
         <div className="bg-card border border-card-border p-6 rounded-lg shadow-lg">

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useGetLevels, useGetStats, type Level } from "@workspace/api-client-react";
+import { useGetLevels, useGetStats, useDeleteLevel, getGetLevelsQueryKey, getGetStatsQueryKey, type Level } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { StatsGrid } from "@/components/StatsGrid";
 import { LevelCard } from "@/components/LevelCard";
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SlidersHorizontal, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const DIFFICULTIES = [
   "Auto",
@@ -55,6 +57,27 @@ export default function Dashboard() {
   const [completionFilter, setCompletionFilter] = useState<CompletionFilter>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("newest");
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const deleteLevel = useDeleteLevel();
+
+  const handleDeleteLevel = (id: number) => {
+    if (!window.confirm("Remove this level from tracking?")) return;
+    deleteLevel.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetLevelsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetStatsQueryKey() });
+          toast({ title: "Level removed" });
+        },
+        onError: () => {
+          toast({ variant: "destructive", title: "Failed to delete level" });
+        },
+      }
+    );
+  };
 
   const completedParam =
     completionFilter === "completed" ? true :
@@ -209,7 +232,7 @@ export default function Dashboard() {
         ) : levels.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {levels.map((level) => (
-              <LevelCard key={level.id} level={level} />
+              <LevelCard key={level.id} level={level} onDelete={handleDeleteLevel} />
             ))}
           </div>
         ) : (
