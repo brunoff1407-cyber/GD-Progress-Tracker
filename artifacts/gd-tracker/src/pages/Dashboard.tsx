@@ -2,6 +2,7 @@ import { useGetLevels, useGetStats } from "@workspace/api-client-react";
 import { Layout } from "@/components/Layout";
 import { StatsGrid } from "@/components/StatsGrid";
 import { LevelCard } from "@/components/LevelCard";
+import { SkillCard } from "@/components/SkillCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -19,6 +20,10 @@ export default function Dashboard() {
         ) : stats ? (
           <StatsGrid stats={stats} />
         ) : null}
+
+        {stats && levels && (
+          <SkillCard stats={stats} levels={levels} />
+        )}
       </div>
 
       <div>
