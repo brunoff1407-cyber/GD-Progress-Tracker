@@ -50,7 +50,7 @@ export default function LevelDetail() {
 
   // Session form state
   const todayStr = new Date().toISOString().split('T')[0];
-  const [sessionAttempts, setSessionAttempts] = useState<string>("");
+  const [sessionTotalAttempts, setSessionTotalAttempts] = useState<string>("");
   const [sessionPercent, setSessionPercent] = useState<string>("");
   const [sessionNotes, setSessionNotes] = useState("");
   const [sessionDate, setSessionDate] = useState(todayStr);
@@ -132,14 +132,16 @@ export default function LevelDetail() {
   };
 
   const handleLogSession = () => {
-    const parsedAttempts = parseInt(sessionAttempts, 10) || 0;
+    const parsedTotal = parseInt(sessionTotalAttempts, 10) || 0;
     const parsedPercent = parseInt(sessionPercent, 10) || 0;
+    // How many attempts were done this session = new total minus the previous total
+    const sessionAttemptsDelta = Math.max(0, parsedTotal - level.attempts);
     
     createSession.mutate(
       {
         levelId,
         data: {
-          attempts: parsedAttempts,
+          attempts: sessionAttemptsDelta,
           bestPercent: parsedPercent,
           notes: sessionNotes || undefined,
           sessionDate: sessionDate ? new Date(sessionDate).toISOString() : undefined,
@@ -150,14 +152,14 @@ export default function LevelDetail() {
           queryClient.invalidateQueries({ queryKey: getGetLevelSessionsQueryKey(levelId) });
           toast({ title: "Session logged!" });
           
-          setSessionAttempts("");
+          setSessionTotalAttempts("");
           setSessionPercent("");
           setSessionNotes("");
           
           const isNewBest = parsedPercent > level.bestPercent;
           const newBestPercent = isNewBest ? parsedPercent : level.bestPercent;
           const isNowCompleted = level.isCompleted || newBestPercent === 100;
-          const newTotalAttempts = level.attempts + parsedAttempts;
+          const newTotalAttempts = parsedTotal;
 
           updateLevel.mutate(
             {
@@ -347,16 +349,23 @@ export default function LevelDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Hash size={12}/> Attempts</label>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                    <Hash size={12}/> Total Attempts Now
+                  </label>
                   <Input 
                     type="number" 
-                    min="0"
-                    placeholder="0"
-                    value={sessionAttempts} 
-                    onChange={e => setSessionAttempts(e.target.value)} 
+                    min={level.attempts}
+                    placeholder={level.attempts.toString()}
+                    value={sessionTotalAttempts} 
+                    onChange={e => setSessionTotalAttempts(e.target.value)} 
                     className="bg-background"
                     data-testid="input-session-attempts"
                   />
+                  {sessionTotalAttempts !== "" && (
+                    <p className="text-xs text-muted-foreground">
+                      +{Math.max(0, (parseInt(sessionTotalAttempts, 10) || 0) - level.attempts)} this session
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Target size={12}/> Best %</label>
@@ -388,7 +397,7 @@ export default function LevelDetail() {
                 <Button 
                   onClick={handleLogSession} 
                   className="font-display uppercase tracking-wider"
-                  disabled={createSession.isPending || !sessionAttempts || !sessionPercent}
+                  disabled={createSession.isPending || !sessionTotalAttempts || !sessionPercent}
                   data-testid="button-log-session"
                 >
                   {createSession.isPending ? "Logging..." : <><Plus size={16} className="mr-2" /> Log Session</>}
