@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: GD Progress Tracker API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: levels
+    description: Level tracking operations
+  - name: stats
+    description: Statistics operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,142 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /levels:
+    get:
+      operationId: getLevels
+      tags: [levels]
+      summary: List all tracked levels
+      parameters:
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Level"
+    post:
+      operationId: createLevel
+      tags: [levels]
+      summary: Add a level to track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelInput"
+      responses:
+        "201":
+          description: Level created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Level"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /levels/{id}:
+    get:
+      operationId: getLevel
+      tags: [levels]
+      summary: Get a single level
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Level found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Level"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateLevel
+      tags: [levels]
+      summary: Update level progress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelUpdate"
+      responses:
+        "200":
+          description: Level updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Level"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteLevel
+      tags: [levels]
+      summary: Remove a level from tracking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get overall progress statistics
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +174,145 @@ components:
       required:
         - status
 
+    Level:
+      type: object
+      required:
+        - id
+        - name
+        - difficulty
+        - bestPercent
+        - attempts
+        - isCompleted
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        creator:
+          type: ["string", "null"]
+        difficulty:
+          type: string
+          enum: [Auto, Easy, Normal, Hard, Harder, Insane, "Easy Demon", "Medium Demon", "Hard Demon", "Insane Demon", "Extreme Demon"]
+        stars:
+          type: ["integer", "null"]
+        bestPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        attempts:
+          type: integer
+          minimum: 0
+        isCompleted:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LevelInput:
+      type: object
+      required:
+        - name
+        - difficulty
+      properties:
+        name:
+          type: string
+          minLength: 1
+        creator:
+          type: string
+        difficulty:
+          type: string
+          enum: [Auto, Easy, Normal, Hard, Harder, Insane, "Easy Demon", "Medium Demon", "Hard Demon", "Insane Demon", "Extreme Demon"]
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 10
+        bestPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        attempts:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+
+    LevelUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        creator:
+          type: string
+        difficulty:
+          type: string
+          enum: [Auto, Easy, Normal, Hard, Harder, Insane, "Easy Demon", "Medium Demon", "Hard Demon", "Insane Demon", "Extreme Demon"]
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 10
+        bestPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        attempts:
+          type: integer
+          minimum: 0
+        isCompleted:
+          type: boolean
+        notes:
+          type: string
+
+    Stats:
+      type: object
+      required:
+        - totalLevels
+        - completedLevels
+        - totalAttempts
+        - completionRate
+        - byDifficulty
+        - avgBestPercent
+      properties:
+        totalLevels:
+          type: integer
+        completedLevels:
+          type: integer
+        totalAttempts:
+          type: integer
+        completionRate:
+          type: number
+        avgBestPercent:
+          type: number
+        byDifficulty:
+          type: array
+          items:
+            $ref: "#/components/schemas/DifficultyBreakdown"
+
+    DifficultyBreakdown:
+      type: object
+      required:
+        - difficulty
+        - total
+        - completed
+      properties:
+        difficulty:
+          type: string
+        total:
+          type: integer
+        completed:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
