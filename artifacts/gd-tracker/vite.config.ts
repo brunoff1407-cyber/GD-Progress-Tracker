@@ -4,27 +4,19 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+// Default to Vite's standard dev port when PORT is not provided (e.g. Vercel,
+// where the platform manages hosting and PORT is not injected).
+const DEFAULT_PORT = 5173;
 const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
+const port = rawPort ? Number(rawPort) : DEFAULT_PORT;
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Default to root base when BASE_PATH is not provided. Replit injects a
+// path-prefixed BASE_PATH for proxy routing; Vercel serves from the root.
+const basePath = process.env.BASE_PATH || "/";
 
 export default defineConfig({
   base: basePath,
