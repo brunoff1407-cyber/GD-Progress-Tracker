@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { logger } from "../lib/logger";
 import {
   clearSession,
   getOidcConfig,
@@ -58,6 +59,52 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
+// Identifiers permitted to bootstrap tracker ownership.
+//
+// Defaults to the Repl owner (REPL_OWNER_ID), so the legitimate operator is
+// recognized with zero configuration. Operators may override or extend the
+// allowlist with OWNER_USER_IDS (OIDC `sub`) and/or OWNER_EMAILS, both
+// comma-separated. If NONE of these resolve to any entry, ownership can never
+// be auto-claimed (fail closed) -- this prevents an arbitrary anonymous
+// internet user from seizing the tracker on a fresh/empty deployment.
+function getOwnerAllowlist(): { ids: Set<string>; emails: Set<string> } {
+  const ids = new Set<string>();
+  const emails = new Set<string>();
+
+  const addCsv = (raw: string | undefined, target: Set<string>, lower = false) => {
+    if (!raw) return;
+    for (const part of raw.split(",")) {
+      const value = part.trim();
+      if (value) target.add(lower ? value.toLowerCase() : value);
+    }
+  };
+
+  addCsv(process.env.OWNER_USER_IDS, ids);
+  addCsv(process.env.OWNER_EMAILS, emails, true);
+
+  const replOwnerId = process.env.REPL_OWNER_ID?.trim();
+  if (replOwnerId) ids.add(replOwnerId);
+
+  return { ids, emails };
+}
+
+// Whether the authenticated principal is permitted to claim tracker ownership.
+// Both `sub` and `email` come from the server-verified OIDC ID token and are
+// compared against server-side configuration, so they are not attacker-forgeable.
+function isAllowedOwnerClaim(claims: Record<string, unknown>): boolean {
+  const { ids, emails } = getOwnerAllowlist();
+  if (ids.size === 0 && emails.size === 0) {
+    logger.warn(
+      "Owner-claim skipped: no owner allowlist configured (set OWNER_EMAILS, OWNER_USER_IDS, or run where REPL_OWNER_ID is available).",
+    );
+    return false;
+  }
+  const sub = typeof claims.sub === "string" ? claims.sub : "";
+  const email =
+    typeof claims.email === "string" ? claims.email.toLowerCase() : "";
+  return (sub !== "" && ids.has(sub)) || (email !== "" && emails.has(email));
+}
+
 async function upsertUser(claims: Record<string, unknown>) {
   const userData = {
     id: claims.sub as string,
@@ -81,14 +128,19 @@ async function upsertUser(claims: Record<string, unknown>) {
     })
     .returning();
 
-  // Owner-lock: the first authenticated user claims ownership of the tracker.
-  // Every subsequent user is a non-owner and is denied access to tracker data.
+  // Owner-lock: an approved operator claims ownership of the tracker on login.
+  // Ownership is gated by a server-side allowlist (see isAllowedOwnerClaim) so
+  // an arbitrary anonymous internet user can NOT self-claim ownership on a
+  // fresh/empty deployment. Users not on the allowlist remain non-owners.
   //
   // The claim is atomic: the UPDATE only sets is_owner when no owner row exists
   // yet, and a partial unique index (IDX_users_single_owner) guarantees at most
   // one owner even under concurrent first logins. On a unique-violation race we
   // swallow the error and re-read the authoritative row below.
   if (!user.isOwner) {
+    if (!isAllowedOwnerClaim(claims)) {
+      return user;
+    }
     try {
       await db
         .update(usersTable)

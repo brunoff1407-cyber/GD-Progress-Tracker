@@ -38,7 +38,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Owner bootstrap is allowlist-gated (`artifacts/api-server/src/routes/auth.ts`). Ownership (`isOwner`) is only granted to a user whose OIDC `sub`/email is on the server-side allowlist: `REPL_OWNER_ID` (default) plus optional `OWNER_USER_IDS` / `OWNER_EMAILS` (comma-separated). It fails closed — if none resolve, no one can claim ownership. In a deployment where `REPL_OWNER_ID` is unavailable, set `OWNER_EMAILS` (or `OWNER_USER_IDS`) or the owner cannot bootstrap.
 
 ## Pointers
 
