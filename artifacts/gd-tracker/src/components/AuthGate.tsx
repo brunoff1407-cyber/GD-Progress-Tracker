@@ -1,7 +1,8 @@
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, Loader2 } from "lucide-react";
+import { setCurrentUserId } from "@/lib/localStore";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -14,7 +15,13 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const { isLoading, isAuthenticated, user, login } = useAuth();
+
+  useEffect(() => {
+    if (user?.id) {
+      setCurrentUserId(user.id);
+    }
+  }, [user?.id]);
 
   if (isLoading) {
     return (

@@ -10,11 +10,33 @@ import type {
 } from "@workspace/api-client-react";
 
 // Device-local persistence for tracker data. Levels and practice sessions live
-// only in this browser's localStorage, so each device has its own private data.
-const LEVELS_KEY = "gd_tracker_levels";
-const SESSIONS_KEY = "gd_tracker_sessions";
-const LEVEL_SEQ_KEY = "gd_tracker_level_seq";
-const SESSION_SEQ_KEY = "gd_tracker_session_seq";
+// only in this browser's localStorage, namespaced by the authenticated user's
+// ID so that different accounts on the same browser profile cannot access each
+// other's data.
+
+let _userId: string | null = null;
+
+/**
+ * Must be called once the authenticated user is known (before any store reads
+ * or writes). Scopes all localStorage keys to the given user ID so that
+ * different accounts on the same browser profile cannot access one another's
+ * tracker data.
+ */
+export function setCurrentUserId(id: string): void {
+  _userId = id;
+}
+
+function keyFor(base: string): string {
+  if (!_userId) {
+    throw new Error("localStore: setCurrentUserId() must be called before accessing the store");
+  }
+  return `${base}_${_userId}`;
+}
+
+const LEVELS_BASE = "gd_tracker_levels";
+const SESSIONS_BASE = "gd_tracker_sessions";
+const LEVEL_SEQ_BASE = "gd_tracker_level_seq";
+const SESSION_SEQ_BASE = "gd_tracker_session_seq";
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -36,11 +58,11 @@ function nextId(key: string): number {
 }
 
 function allLevels(): Level[] {
-  return read<Level[]>(LEVELS_KEY, []);
+  return read<Level[]>(keyFor(LEVELS_BASE), []);
 }
 
 function allSessions(): Session[] {
-  return read<Session[]>(SESSIONS_KEY, []);
+  return read<Session[]>(keyFor(SESSIONS_BASE), []);
 }
 
 export interface ListLevelsParams {
@@ -69,7 +91,7 @@ export function getLevel(id: number): Level | undefined {
 export function createLevel(input: LevelInput): Level {
   const now = new Date().toISOString();
   const level: Level = {
-    id: nextId(LEVEL_SEQ_KEY),
+    id: nextId(keyFor(LEVEL_SEQ_BASE)),
     name: input.name,
     creator: input.creator ?? null,
     difficulty: input.difficulty as LevelDifficulty,
@@ -83,7 +105,7 @@ export function createLevel(input: LevelInput): Level {
   };
   const levels = allLevels();
   levels.push(level);
-  write(LEVELS_KEY, levels);
+  write(keyFor(LEVELS_BASE), levels);
   return level;
 }
 
@@ -103,14 +125,14 @@ export function updateLevel(id: number, data: LevelUpdate): Level {
   if (data.notes !== undefined) updated.notes = data.notes;
 
   levels[idx] = updated;
-  write(LEVELS_KEY, levels);
+  write(keyFor(LEVELS_BASE), levels);
   return updated;
 }
 
 export function deleteLevel(id: number): void {
-  write(LEVELS_KEY, allLevels().filter((l) => l.id !== id));
+  write(keyFor(LEVELS_BASE), allLevels().filter((l) => l.id !== id));
   // Cascade: remove practice sessions belonging to the deleted level.
-  write(SESSIONS_KEY, allSessions().filter((s) => s.levelId !== id));
+  write(keyFor(SESSIONS_BASE), allSessions().filter((s) => s.levelId !== id));
 }
 
 export function listLevelSessions(levelId: number): Session[] {
@@ -120,7 +142,7 @@ export function listLevelSessions(levelId: number): Session[] {
 export function createSession(levelId: number, input: SessionInput): Session {
   const now = new Date().toISOString();
   const session: Session = {
-    id: nextId(SESSION_SEQ_KEY),
+    id: nextId(keyFor(SESSION_SEQ_BASE)),
     levelId,
     attempts: input.attempts,
     bestPercent: input.bestPercent,
@@ -130,12 +152,12 @@ export function createSession(levelId: number, input: SessionInput): Session {
   };
   const sessions = allSessions();
   sessions.push(session);
-  write(SESSIONS_KEY, sessions);
+  write(keyFor(SESSIONS_BASE), sessions);
   return session;
 }
 
 export function deleteSession(id: number): void {
-  write(SESSIONS_KEY, allSessions().filter((s) => s.id !== id));
+  write(keyFor(SESSIONS_BASE), allSessions().filter((s) => s.id !== id));
 }
 
 export function computeStats(): Stats {
