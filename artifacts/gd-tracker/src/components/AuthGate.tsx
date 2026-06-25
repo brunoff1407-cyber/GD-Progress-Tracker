@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Lock, LogOut, Loader2 } from "lucide-react";
+import { Gamepad2, Loader2 } from "lucide-react";
 
 function Shell({ children }: { children: ReactNode }) {
   return (
@@ -14,7 +14,7 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { isLoading, isAuthenticated, user, login, logout } = useAuth();
+  const { isLoading, isAuthenticated, login } = useAuth();
 
   if (isLoading) {
     return (
@@ -39,31 +39,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
         </p>
         <Button onClick={login} className="mt-6 w-full" size="lg">
           Log in
-        </Button>
-      </Shell>
-    );
-  }
-
-  if (!user?.isOwner) {
-    return (
-      <Shell>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
-          <Lock className="h-9 w-9" />
-        </div>
-        <h1 className="mt-6 font-display text-2xl tracking-wide text-foreground">
-          Private tracker
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This tracker belongs to someone else. You don't have access to its data.
-        </p>
-        <Button
-          onClick={logout}
-          variant="outline"
-          className="mt-6 w-full"
-          size="lg"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
         </Button>
       </Shell>
     );

@@ -10,7 +10,7 @@ import {
   useCreateSession,
   useDeleteSession,
   getGetLevelSessionsQueryKey
-} from "@workspace/api-client-react";
+} from "@/lib/localApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { DifficultyBadge } from "@/components/DifficultyBadge";

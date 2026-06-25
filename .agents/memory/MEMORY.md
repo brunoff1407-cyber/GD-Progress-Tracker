@@ -1,1 +1,2 @@
-- [Auth owner-lock](auth-owner-lock.md) — single-owner API access control; first login claims ownership; `auth_sessions` table renamed to avoid collision with gameplay `sessions`.
+- [GD Tracker device-local data](gd-tracker-local-data.md) — levels/sessions/stats are localStorage-only via localApi drop-in; login kept but owner-lock dropped; completionRate is a 0..1 fraction the UI shows with a "% rate" label.
+- [Auth owner-lock](auth-owner-lock.md) — server-side Replit Auth + single-owner claim/lock on the API (now unused by the device-local frontend, kept for non-destructiveness).

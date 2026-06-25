@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useGetLevels, useGetStats, useDeleteLevel, getGetLevelsQueryKey, getGetStatsQueryKey, type Level } from "@workspace/api-client-react";
+import { useGetLevels, useGetStats, useDeleteLevel, getGetLevelsQueryKey, getGetStatsQueryKey, type Level } from "@/lib/localApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { StatsGrid } from "@/components/StatsGrid";

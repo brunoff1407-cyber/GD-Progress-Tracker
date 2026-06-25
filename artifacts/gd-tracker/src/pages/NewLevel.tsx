@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { LevelInputDifficulty, useCreateLevel, getGetLevelsQueryKey, getGetStatsQueryKey } from "@workspace/api-client-react";
+import { LevelInputDifficulty, useCreateLevel, getGetLevelsQueryKey, getGetStatsQueryKey } from "@/lib/localApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
