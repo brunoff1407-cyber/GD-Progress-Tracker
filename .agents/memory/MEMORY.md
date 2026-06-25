@@ -1,0 +1,1 @@
+- [Auth owner-lock](auth-owner-lock.md) — single-owner API access control; first login claims ownership; `auth_sessions` table renamed to avoid collision with gameplay `sessions`.
