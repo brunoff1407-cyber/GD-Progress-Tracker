@@ -6,6 +6,8 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import NewLevel from "@/pages/NewLevel";
 import LevelDetail from "@/pages/LevelDetail";
+import { LocalAuthProvider } from "@/context/LocalAuth";
+import { LoginGate } from "@/components/LoginGate";
 
 const queryClient = new QueryClient();
 
@@ -23,12 +25,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <LocalAuthProvider>
+        <TooltipProvider>
+          <LoginGate>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </LoginGate>
+          <Toaster />
+        </TooltipProvider>
+      </LocalAuthProvider>
     </QueryClientProvider>
   );
 }

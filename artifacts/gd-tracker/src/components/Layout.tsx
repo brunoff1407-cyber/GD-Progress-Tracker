@@ -1,7 +1,9 @@
 import { Link } from "wouter";
-import { Zap } from "lucide-react";
+import { Zap, LogOut } from "lucide-react";
+import { useLocalAuth } from "@/context/LocalAuth";
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { user, logout } = useLocalAuth();
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/20 sticky top-0 z-50">
@@ -14,10 +16,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
               GD Tracker
             </span>
           </Link>
-          <nav>
+          <nav className="flex items-center gap-2 sm:gap-4">
             <Link href="/levels/new" className="text-sm font-medium hover:text-primary transition-colors uppercase tracking-widest bg-primary/10 px-4 py-2 rounded border border-primary/20 hover:border-primary/50">
               Add Level
             </Link>
+            {user && (
+              <button
+                type="button"
+                onClick={logout}
+                title={`Log out ${user}`}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest px-3 py-2 rounded border border-border hover:border-foreground/30"
+              >
+                <LogOut size={16} />
+                <span className="hidden sm:inline">Log out</span>
+              </button>
+            )}
           </nav>
         </div>
       </header>

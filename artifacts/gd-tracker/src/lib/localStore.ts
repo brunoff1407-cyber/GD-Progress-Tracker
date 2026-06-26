@@ -9,12 +9,54 @@ import type {
   DifficultyBreakdown,
 } from "@workspace/api-client-react";
 
-// Device-local persistence for tracker data. The app has no login; levels and
-// practice sessions live only in this browser's localStorage, keeping each
-// user's tracking data private to their own browser.
+// Device-local persistence for tracker data. The app uses a client-side login
+// (no server): levels and practice sessions live only in this browser's
+// localStorage, namespaced by the logged-in username so different profiles on
+// the same browser keep their tracking data private from one another.
+
+const CURRENT_USER_KEY = "gd_tracker_current_user";
+
+let _userId: string | null = null;
+
+/** Returns the logged-in username, restoring it from localStorage if needed. */
+export function getCurrentUser(): string | null {
+  if (_userId !== null) return _userId;
+  try {
+    _userId = localStorage.getItem(CURRENT_USER_KEY);
+  } catch {
+    _userId = null;
+  }
+  return _userId;
+}
+
+/** Persists the logged-in username and scopes all subsequent store access to it. */
+export function setCurrentUser(username: string): void {
+  _userId = username;
+  try {
+    localStorage.setItem(CURRENT_USER_KEY, username);
+  } catch {
+    /* ignore storage write failures */
+  }
+}
+
+/** Clears the active session (logout). Tracker data for the user is retained. */
+export function clearCurrentUser(): void {
+  _userId = null;
+  try {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  } catch {
+    /* ignore storage write failures */
+  }
+}
 
 function keyFor(base: string): string {
-  return base;
+  const user = getCurrentUser();
+  if (!user) {
+    throw new Error(
+      "localStore: no user is logged in; setCurrentUser() must be called first",
+    );
+  }
+  return `${base}_${user}`;
 }
 
 const LEVELS_BASE = "gd_tracker_levels";
