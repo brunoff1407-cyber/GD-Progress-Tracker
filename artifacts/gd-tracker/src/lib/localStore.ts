@@ -9,28 +9,12 @@ import type {
   DifficultyBreakdown,
 } from "@workspace/api-client-react";
 
-// Device-local persistence for tracker data. Levels and practice sessions live
-// only in this browser's localStorage, namespaced by the authenticated user's
-// ID so that different accounts on the same browser profile cannot access each
-// other's data.
-
-let _userId: string | null = null;
-
-/**
- * Must be called once the authenticated user is known (before any store reads
- * or writes). Scopes all localStorage keys to the given user ID so that
- * different accounts on the same browser profile cannot access one another's
- * tracker data.
- */
-export function setCurrentUserId(id: string): void {
-  _userId = id;
-}
+// Device-local persistence for tracker data. The app has no login; levels and
+// practice sessions live only in this browser's localStorage, keeping each
+// user's tracking data private to their own browser.
 
 function keyFor(base: string): string {
-  if (!_userId) {
-    throw new Error("localStore: setCurrentUserId() must be called before accessing the store");
-  }
-  return `${base}_${_userId}`;
+  return base;
 }
 
 const LEVELS_BASE = "gd_tracker_levels";
